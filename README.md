@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # AI Crop Predictor Web App
 
 This is a simple AI-powered web app that:
@@ -46,3 +47,7 @@ You can deploy this app to platforms like **Render**, **Heroku**, or **Railway**
 
 ## License
 MIT "# crop-recommendation-system" 
+=======
+# Crop-Recommendation-System
+Predict crops using soil type, rainfall, temperature, and image-based soil detection.
+>>>>>>> b8dd232e53dbefb5a0fabd6403e783b9bab109ea
