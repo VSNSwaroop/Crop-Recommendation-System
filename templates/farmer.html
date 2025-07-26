@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Farmer Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <style>
+        .result-box { margin-top: 2em; padding: 1em; border-radius: 8px; background: #f7f7f7; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-success">
+  <a class="navbar-brand text-white" href="{{ url_for('farmer') }}">Farmer Dashboard</a>
+  <div class="ml-auto">
+    {% if user.is_admin %}
+      <a href="{{ url_for('admin') }}" class="btn btn-outline-light mr-2">Admin Dashboard</a>
+      <a href="{{ url_for('farmers') }}" class="btn btn-outline-light mr-2">All Farmers</a>
+    {% endif %}
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-light">Logout</a>
+  </div>
+</nav>
+<div class="container mt-5" style="max-width: 500px;">
+    <h3>Welcome, {{ user.email }}!</h3>
+    <hr>
+    <form id="predict-form" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="soil_image">Soil Image</label>
+            <input type="file" class="form-control" id="soil_image" name="soil_image" accept="image/*" required>
+        </div>
+        <div class="form-group">
+            <label for="temperature">Temperature (°C)</label>
+            <input type="number" class="form-control" id="temperature" name="temperature" step="0.1" required>
+        </div>
+        <div class="form-group">
+            <label for="rainfall">Rainfall (mm)</label>
+            <input type="number" class="form-control" id="rainfall" name="rainfall" step="0.1" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Predict Crop</button>
+    </form>
+    <div class="result-box" id="result" style="display:none;"></div>
+    <div class="alert alert-danger mt-3" id="error" style="display:none;"></div>
+</div>
+<script>
+    // Geolocation and weather fetch (Open-Meteo)
+    function fetchWeather(lat, lon) {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=precipitation_sum&timezone=auto`;
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.current_weather && data.daily) {
+                    document.getElementById('temperature').value = data.current_weather.temperature;
+                    document.getElementById('rainfall').value = data.daily.precipitation_sum[0];
+                }
+            });
+    }
+    window.onload = function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                pos => fetchWeather(pos.coords.latitude, pos.coords.longitude),
+                err => {});
+        }
+    };
+    // Form submission
+    document.getElementById('predict-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('error').style.display = 'none';
+        const formData = new FormData(this);
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            if (response.ok) {
+                document.getElementById('result').innerHTML = `<strong>Predicted Crop:</strong> ${data.predicted_crop}<br><strong>Soil Type:</strong> ${data.soil_type}`;
+                document.getElementById('result').style.display = 'block';
+            } else {
+                document.getElementById('error').textContent = data.error || 'Prediction failed.';
+                document.getElementById('error').style.display = 'block';
+            }
+        } catch (err) {
+            document.getElementById('error').textContent = 'Error connecting to server.';
+            document.getElementById('error').style.display = 'block';
+        }
+    });
+</script>
+</body>
+</html> 

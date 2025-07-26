@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All Farmers</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <style>
+        .user-box { min-height: 200px; }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-dark">
+  <a class="navbar-brand text-white" href="{{ url_for('admin') }}">Admin Dashboard</a>
+  <div class="ml-auto">
+    <a href="{{ url_for('farmers') }}" class="btn btn-outline-light mr-2">All Farmers</a>
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-light">Logout</a>
+  </div>
+</nav>
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card border-success mb-3 user-box">
+                <div class="card-header bg-success text-white">Activated Users</div>
+                <div class="card-body">
+                    {% if activated_users %}
+                        <ul class="list-group">
+                        {% for user in activated_users %}
+                            <li class="list-group-item">{{ user.email }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No activated users.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-danger mb-3 user-box">
+                <div class="card-header bg-danger text-white">Not Activated Users</div>
+                <div class="card-body">
+                    {% if not_activated_users %}
+                        <ul class="list-group">
+                        {% for user in not_activated_users %}
+                            <li class="list-group-item">{{ user.email }}</li>
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No not activated users.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html> 

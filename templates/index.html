@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Crop Predictor</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 0; }
+        .container { max-width: 400px; margin: 40px auto; background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        label { display: block; margin-top: 1em; color: #555; }
+        input[type="file"], input[type="number"] { width: 100%; margin-top: 0.5em; padding: 0.5em; border: 1px solid #ccc; border-radius: 4px; }
+        button { margin-top: 1.5em; width: 100%; padding: 0.75em; background: #4CAF50; color: #fff; border: none; border-radius: 4px; font-size: 1em; cursor: pointer; }
+        button:hover { background: #388e3c; }
+        .result { margin-top: 2em; text-align: center; font-size: 1.2em; color: #222; }
+        .error { color: #c00; text-align: center; margin-top: 1em; }
+        .loading { text-align: center; color: #888; margin-top: 1em; }
+        @media (max-width: 500px) {
+            .container { max-width: 98vw; margin: 0.5em; padding: 1em; }
+            h2 { font-size: 1.3em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>AI Crop Predictor</h2>
+        <form id="predict-form">
+            <label for="soil_image">Soil Image</label>
+            <input type="file" id="soil_image" name="soil_image" accept="image/*" required>
+
+            <label for="temperature">Temperature (°C)</label>
+            <input type="number" id="temperature" name="temperature" step="0.1" required>
+
+            <label for="rainfall">Rainfall (mm)</label>
+            <input type="number" id="rainfall" name="rainfall" step="0.1" required>
+
+            <button type="submit">Predict Crop</button>
+        </form>
+        <div class="loading" id="loading"></div>
+        <div class="result" id="result"></div>
+        <div class="error" id="error"></div>
+    </div>
+    <script>
+        // Mobile-friendly weather detection
+        const tempInput = document.getElementById('temperature');
+        const rainInput = document.getElementById('rainfall');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+        const resultDiv = document.getElementById('result');
+
+        async function fetchWeather(lat, lon) {
+            // Open-Meteo API: https://open-meteo.com/en/docs
+            // We'll use current weather and daily precipitation sum
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=precipitation_sum&timezone=auto`;
+            try {
+                loadingDiv.textContent = 'Detecting weather...';
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.current_weather && data.daily) {
+                    tempInput.value = data.current_weather.temperature;
+                    rainInput.value = data.daily.precipitation_sum[0];
+                    loadingDiv.textContent = '';
+                } else {
+                    loadingDiv.textContent = '';
+                    errorDiv.textContent = 'Could not fetch weather data. Please enter manually.';
+                }
+            } catch (e) {
+                loadingDiv.textContent = '';
+                errorDiv.textContent = 'Could not fetch weather data. Please enter manually.';
+            }
+        }
+
+        function detectWeather() {
+            if (navigator.geolocation) {
+                loadingDiv.textContent = 'Getting your location...';
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lon = pos.coords.longitude;
+                        fetchWeather(lat, lon);
+                    },
+                    (err) => {
+                        loadingDiv.textContent = '';
+                        errorDiv.textContent = 'Location access denied. Please enter weather data manually.';
+                    }
+                );
+            } else {
+                errorDiv.textContent = 'Geolocation not supported. Please enter weather data manually.';
+            }
+        }
+
+        window.onload = detectWeather;
+
+        // Form submission
+        const form = document.getElementById('predict-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            resultDiv.textContent = '';
+            errorDiv.textContent = '';
+            loadingDiv.textContent = 'Predicting...';
+            const formData = new FormData(form);
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                loadingDiv.textContent = '';
+                if (response.ok) {
+                    resultDiv.innerHTML = '<strong>Predicted Crop:</strong> ' + data.predicted_crop + '<br><strong>Soil Type:</strong> ' + data.soil_type;
+                } else {
+                    errorDiv.textContent = data.error || 'Prediction failed.';
+                }
+            } catch (err) {
+                loadingDiv.textContent = '';
+                errorDiv.textContent = 'Error connecting to server.';
+            }
+        });
+    </script>
+</body>
+</html> 
